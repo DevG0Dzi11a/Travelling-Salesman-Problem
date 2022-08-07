@@ -1,143 +1,212 @@
-#include <bits/stdc++.h>
+#include<bits/stdc++.h>
 using namespace std;
+#define inf 999
+/*
+999 20 30 10 11
+15 999 16 4 2
+3 5 999 2 4
+19 6 18 999 3
+16 4 7 16 999
+*/
 
-typedef pair<int, int>mypr;
-#define inf INT_MAX
-vector<mypr>selected_graph[5];
-priority_queue<mypr>prQ;
+//cost, matrix, path, dest
+typedef vector<int> vec_d;
+typedef vector<vec_d> vec_2d;
+typedef pair<vec_d, int> pair1;
+typedef pair<vec_2d, pair1> pair2;
+typedef pair<int , pair2> main_pair;
+
+priority_queue < main_pair > my_queue, temp_queue;
+int nodes;
+vec_2d cost_matrix;
+vec_2d temp_mat;
+int reduced_cost1;
+int hold_cost;
+vec_d temp_path;
+int temp_cost=0;
 
 
-void input_graph(vector<mypr>graph[], int nodes, int edges)
+
+void inputMatrix()
 {
-    int starting_node, ending_node, weight;
-    cout<< "Enter \nstarting node    ending node    weight"<<endl;
-    //Assigning default value to all the edges
-    for(int i=1; i<5; i++)
+    int i, j, x;
+    for(i=0; i<nodes; i++)
     {
-        for(int j=1; j<5; j++)
+        vec_d temp;
+        for(j=0; j<nodes; j++)
         {
-            graph[i].push_back(make_pair(j, inf));
+            cin>>x;
+            temp.push_back(x);
         }
-    }
-    //taking input for the edges
-    for(int i=1; i<=edges; i++)
-    {
-        cin>>starting_node>>ending_node>>weight;
-        if(starting_node!=ending_node)
-            graph[starting_node][ending_node-1].second = weight;
+        cost_matrix.push_back(temp);
     }
 }
 
-
-int reduce_cost(vector<mypr>graph[])
+void printMatrix(vec_2d temp)
 {
-    int minimum, min_cost=0;
-    vector<mypr>temp_graph[5];
-    for(int i=1; i<5; i++)
+    int i, j;
+    for(i=0; i<nodes; i++)
     {
-        temp_graph[i] = graph[i];
-    }
-    // Row reduction
-    for(int i=1; i<5; i++)
-    {
-        minimum=inf;
-        //finding the minimum in a row
-        for(int j=0; j<4; j++)
+        for(j=0; j<nodes; j++)
         {
-            if(minimum>temp_graph[i][j].second && temp_graph[i][j].second!=inf)
-            {
-                minimum = temp_graph[i][j].second;
-            }
-        }
-        cout<<"Minimum value in row "<<i<<" : "<<minimum<<endl;
-        for(int j=0; j<4; j++)
-        {
-            if(temp_graph[i][j].second!=inf)
-                temp_graph[i][j].second-=minimum;
-        }
-        min_cost += minimum;
-    }
-    cout<<"Minimum cost from all the row: "<<min_cost<<endl;
-
-
-    //Column reduction
-    for(int i=0; i<4; i++)
-    {
-        minimum=inf;
-        //finding the minimum in a row
-        for(int j=1; j<5; j++)
-        {
-            if(minimum>temp_graph[j][i].second && temp_graph[j][i].second!=inf)
-            {
-                minimum = temp_graph[j][i].second;
-            }
-        }
-        cout<<"Minimum value in column "<<i<<" : "<<minimum<<endl;
-        for(int j=1; j<5; j++)
-        {
-            if(temp_graph[j][i].second!=inf)
-                temp_graph[j][i].second-=minimum;
-        }
-        min_cost += minimum;
-    }
-
-    for(int i=1; i<5; i++)
-    {
-        selected_graph[i] = temp_graph[i];
-    }
-    return min_cost;
-}
-
-void output_graph(vector<mypr>graph[])
-{
-    cout<<"    "<<"        0              1              2              3  "<<endl;
-    cout<<"    "<<"        1              2              3              4  "<<endl;
-    cout<<"----"<<"--------------------------------------------------------"<<endl;
-    for(int i=1; i<5; i++)
-    {
-
-        cout<<i <<" |";
-        for(int j=0; j<graph[i].size(); j++)
-        {
-            cout<<setw(10)<<graph[i][j].second<<"     ";
+            if(temp[i][j] == inf)
+                cout<<setw(5)<<"inf"<<" ";
+            else
+                cout<<setw(5)<<temp[i][j]<<" " ;
         }
         cout<<endl;
     }
+}
 
+vec_2d reduce(vec_2d temp)
+{
+    int i, j, minimum, min_cost=0;
+
+    for(i=0; i<nodes; i++)//row reduction loop
+    {
+        minimum = inf;//setting a maximum value for minimum
+        for(j=0; j<nodes; j++)//minimum finding loop
+        {
+            if(minimum>temp[i][j] && temp[i][j] != inf)
+            {
+                minimum = temp[i][j];
+            }
+        }
+        for(j=0; j<nodes; j++)
+        {
+            if(temp[i][j] != inf)
+            {
+                temp[i][j]-=minimum;
+            }
+        }
+        if(minimum != inf)
+            min_cost += minimum;
+    }
+//    cout<<"Row min :"<< min_cost;
+    for(i=0; i<nodes; i++)//column reduction loop
+    {
+        minimum = inf;
+        for(j=0; j<nodes; j++)
+        {
+            if(minimum>temp[j][i] && temp[j][i] != inf)
+            {
+                minimum = temp[j][i];
+            }
+        }
+        for(j=0; j<nodes; j++)
+        {
+            if(temp[j][i] != inf)
+            {
+                temp[j][i]-=minimum;
+            }
+        }
+        if(minimum != inf)
+            min_cost += minimum;
+    }
+//    cout<<"   Column min :"<< min_cost<<endl;
+    if(reduced_cost1 == 0)
+        reduced_cost1 = min_cost;
+    else if(min_cost != inf)
+        hold_cost = min_cost;
+//    cout<<"Min cost : "<<min_cost<<" hold cost : "<<hold_cost<<endl;
+    return temp;
+}
+
+void source_to_nodes(int source)
+{
+    int i, j, k, source_to_node_cost, total_cost;
+
+    for(i=1; i<=nodes; i++)
+    {
+        vec_d path = temp_path;
+        vec_2d temp = cost_matrix;
+        if(i != source && temp[i-1][0] != inf)
+        {
+            path.push_back(i);
+            source_to_node_cost = cost_matrix[source-1][i-1];
+            temp[i-1][source-1] = inf;
+            temp[i-1][0] = inf;
+            for(j=1; j<=nodes; j++)
+            {
+                temp[source-1][j-1] = inf;
+                temp[j-1][i-1] = inf;
+            }
+            cout<<endl<<i<<endl<<endl;
+            cout<<"Path in SNC : ";
+            for(int j=0; j<path.size(); j++)
+            {
+                cout<<path[j]<<" ";
+            }
+            cout<<endl;
+            printMatrix(temp);
+            temp = reduce(temp);
+            total_cost = reduced_cost1 + source_to_node_cost + hold_cost;
+            cout<<reduced_cost1<<"    "<<source_to_node_cost<<"    "<<hold_cost<<"      "<<total_cost<<endl;
+            my_queue.push(make_pair((total_cost*(-1)), make_pair(temp, make_pair(path, i))));
+            path.clear();
+            if(path.size() == nodes)
+                break;
+        }
+    }
 }
 
 int main()
 {
-    int nodes=4, edges=12;
-    vector<mypr>graph[5];
-    int status[5] = {0,0};
-    //cout<<"Enter nodes: ";
+    nodes = 5;
+    //cout<<"Number of nodes :";
     //cin>>nodes;
-    //cout<<"Enter edges: ";
-    //cin>>edges;
-    input_graph(graph, nodes, edges);
-    output_graph(graph);
-    int min_cost = reduce_cost(graph);
-    cout<<"After Reduction min cost : "<<min_cost<<endl;
-    for(int i = 1; i<5; i++)
-    {
-        graph[i] = selected_graph[i];
-    }
-    output_graph(graph);
+    //cout<<"Enter the cost matrix :"<<endl;
+    //inputMatrix();
+    cost_matrix = {
+        {999, 20, 30, 10, 11},
+        {15, 999, 16, 4, 2},
+        {3, 5, 999, 2, 4},
+        {19, 6, 18, 999, 3},
+        {16, 4, 7, 16, 999}
+    };
+    cout<<"Initial matrix : "<<endl;
+    printMatrix(cost_matrix);
+    vec_2d reduced_cost_matrix = reduce(cost_matrix);
+    cost_matrix = reduced_cost_matrix;
 
 
-    status[1] = 1;
-    int min_cost_node=0;
+    temp_path.push_back(1);
+    source_to_nodes(1);
+    main_pair  top = my_queue.top();
+    cout<<"Path : ";
+    cout<<my_queue.top().second.second.first[0];
+    cout<<endl;
+    temp_cost = temp_cost + my_queue.top().first*(-1);
 
-    for(int i=1; i<5; i++)
-    {
-        for(int j=1; j<5; j++)
-        {
-            if(status[j] != 1)
-            {
 
-            }
-        }
-    }
+    cost_matrix = my_queue.top().second.first;
+    temp_path = my_queue.top().second.second.first;
+    source_to_nodes(my_queue.top().second.second.first[my_queue.top().second.second.first.size()-1]);
+    cout<<"Path : ";
+    for(int i=0; i<my_queue.top().second.second.first.size(); i++)
+        cout<<my_queue.top().second.second.first[i]<<" ";
+    cout<<endl;
+    temp_cost = temp_cost + my_queue.top().first*(-1);
+    my_queue.pop();
+
+
+
+    cost_matrix = my_queue.top().second.first;
+    temp_path = my_queue.top().second.second.first;
+    source_to_nodes(my_queue.top().second.second.first[my_queue.top().second.second.first.size()-1]);
+    cout<<"Path : ";
+    for(int i=0; i<my_queue.top().second.second.first.size(); i++)
+        cout<<my_queue.top().second.second.first[i]<<" ";
+    cout<<endl;
+
+
+    cost_matrix = my_queue.top().second.first;
+    temp_path = my_queue.top().second.second.first;
+    source_to_nodes(my_queue.top().second.second.first[my_queue.top().second.second.first.size()-1]);
+    cout<<"Path : ";
+    for(int i=0; i<my_queue.top().second.second.first.size(); i++)
+        cout<<my_queue.top().second.second.first[i]<<" ";
+    cout<<endl;
+
     return 0;
 }
